@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag and Drop Table with Undo Animation</title>
+    <link rel="stylesheet" href="style.css"> 
+</head>
+<body>
+<table id="dragTable">
+<tr>
+<td><div class="box" style="background-color: red;" draggable="true" id="box100">100</div></td>
+<td><div class="box" style="background-color: blue;" draggable="true" id="box200">200</div></td>
+<td><div class="box" style="background-color: green;" draggable="true" id="box300">300</div></td>
+</tr>
+<tr>
+<td><div class="box" style="background-color: yellow;" draggable="true" id="box400">400</div></td>
+<td><div class="box" style="background-color: purple;" draggable="true" id="box500">500</div></td>
+<td><div class="box" style="background-color: orange;" draggable="true" id="box600">600</div></td>
+</tr>
+<tr>
+<td><div class="box" style="background-color: pink;" draggable="true" id="box700">700</div></td>
+<td><div class="box" style="background-color: brown;" draggable="true" id="box800">800</div></td>
+<td><div class="box" style="background-color: gray;" draggable="true" id="box900">900</div></td>
+</tr>
+</table>
+
+<div class="buttons-container">
+    <button id="undoBtn">Undo</button>
+    <button id="addRowBtn">Add Row</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
