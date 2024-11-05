@@ -26,13 +26,11 @@ function addDragAndDropToCell(cell) {
         const targetBox = targetCell.querySelector('.box');
         
         if (draggedBox !== targetBox) {
-            animateBoxes(draggedBox, targetBox, sourceCell, targetCell, () => {
-                targetCell.appendChild(draggedBox);
-                sourceCell.appendChild(targetBox);
-                // Save the action in the undo stack
-                saveAction('drop', sourceCell, targetCell, targetBox, draggedBox);
-                updateButtonStates();
-            });
+            const command = new DropCommand(sourceCell, targetCell, draggedBox, targetBox);
+            command.execute();
+            undoStack.push(command);
+            redoStack = []; // Clear redo stack after a new action
+            updateButtonStates();
         }
     });
 }
@@ -44,27 +42,73 @@ document.querySelectorAll('td').forEach(cell => {
 // Add row
 document.getElementById('addRowBtn').addEventListener('click', function() {
     const table = document.getElementById('dragTable');
-    const newRow = table.insertRow();
-    const cells = [];
-
-    for (let i = 0; i < 3; i++) {
-        const cell = newRow.insertCell();
-        const box = document.createElement('div');
-        box.className = 'box';
-        box.id = `box${nextBoxId}`;
-        box.textContent = nextBoxId;
-        box.style.backgroundColor = getRandomColor();
-        box.setAttribute('draggable', true);
-        cell.appendChild(box);
-        addDragAndDropToCell(cell); 
-        nextBoxId += 100;
-        cells.push(box);
-    }
-    
-    // Save the action for adding a row
-    saveAction('addRow', null, newRow, cells);
+    const command = new AddRowCommand(table);
+    command.execute();
+    undoStack.push(command);
+    redoStack = []; // Clear redo stack after a new action
     updateButtonStates();
 });
+
+// Command Classes for Undo/Redo
+class DropCommand {
+    constructor(sourceCell, targetCell, sourceBox, targetBox) {
+        this.sourceCell = sourceCell;
+        this.targetCell = targetCell;
+        this.sourceBox = sourceBox;
+        this.targetBox = targetBox;
+    }
+
+    execute() {
+        animateBoxes(this.sourceBox, this.targetBox, this.sourceCell, this.targetCell, () => {
+            this.targetCell.appendChild(this.sourceBox);
+            this.sourceCell.appendChild(this.targetBox);
+        });
+    }
+
+    undo() {
+        animateBoxes(this.sourceBox, this.targetBox, this.targetCell, this.sourceCell, () => {
+            this.sourceCell.appendChild(this.sourceBox);
+            this.targetCell.appendChild(this.targetBox);
+        });
+    }
+
+    redo() {
+        this.execute();
+    }
+}
+
+class AddRowCommand {
+    constructor(table) {
+        this.table = table;
+        this.newRow = null;
+        this.cells = [];
+    }
+
+    execute() {
+        this.newRow = this.table.insertRow();
+        for (let i = 0; i < 3; i++) {
+            const cell = this.newRow.insertCell();
+            const box = document.createElement('div');
+            box.className = 'box';
+            box.id = `box${nextBoxId}`;
+            box.textContent = nextBoxId;
+            box.style.backgroundColor = getRandomColor();
+            box.setAttribute('draggable', true);
+            cell.appendChild(box);
+            addDragAndDropToCell(cell);
+            this.cells.push(box);
+            nextBoxId += 100;
+        }
+    }
+
+    undo() {
+        this.table.deleteRow(this.newRow.rowIndex);
+    }
+
+    redo() {
+        this.execute();
+    }
+}
 
 // Undo and Redo functionality
 document.getElementById('undoBtn').addEventListener('click', function() {
@@ -84,39 +128,6 @@ document.getElementById('redoBtn').addEventListener('click', function() {
         updateButtonStates();
     }
 });
-
-// Action command pattern
-function saveAction(type, sourceCell, targetCell, sourceBox, targetBox) {
-    const action = {
-        type,
-        sourceCell,
-        targetCell,
-        sourceBox,
-        targetBox,
-        undo() {
-            if (this.type === 'drop') {
-                animateBoxes(this.sourceBox, this.targetBox, targetCell, sourceCell, () => {
-                    sourceCell.appendChild(this.targetBox);
-                    targetCell.appendChild(this.sourceBox);
-                });
-            } else if (this.type === 'addRow') {
-                this.targetCell.remove();
-            }
-        },
-        redo() {
-            if (this.type === 'drop') {
-                animateBoxes(this.targetBox, this.sourceBox, sourceCell, targetCell, () => {
-                    targetCell.appendChild(this.targetBox);
-                    sourceCell.appendChild(this.sourceBox);
-                });
-            } else if (this.type === 'addRow') {
-                document.getElementById('dragTable').appendChild(this.targetCell);
-            }
-        }
-    };
-
-    undoStack.push(action);
-}
 
 // Animation for boxes during drag and drop
 function animateBoxes(box1, box2, cell1, cell2, callback) {
